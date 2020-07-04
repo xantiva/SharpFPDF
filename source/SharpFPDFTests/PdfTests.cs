@@ -19,6 +19,13 @@ namespace SharpFPDFTests
         }
 
         [TestMethod]
+        public void CreatePdf()
+        {
+            var sut = new Pdf();
+
+        }
+
+        [TestMethod]
         public void SPrintF()
         {
             // sprintf('%.2F w',$lw *$this->k)
@@ -39,27 +46,6 @@ namespace SharpFPDFTests
             _sut.SetTextColor(50, 128, 30);
 
         }
-
-        //protected void BeginPage<T?>(Orientation? orientation, T? size, Rotation? rotation)
-        //{
-        //    PageSize? pageSize = null;
-        //    Size? dimension = null;
-        //    if (size is PageSize foundPageSize) { pageSize = foundPageSize; }
-        //    else if (size is Size foundDimension) { dimension = foundDimension; }
-        //    else { throw new ArgumentException("The wrong type", nameof(size)); }
-
-        //    if (pageSize != null) Debug.WriteLine($"Found a page size {pageSize}");
-        //    if (dimension != null) Debug.WriteLine($"Found a dimension {dimension.Width} | {dimension.Height}");
-
-        //}
-
-        //[TestMethod]
-        //public void TestBeginPage()
-        //{
-        //    BeginPage(Orientation.Portrait, PageSize.A4, Rotation.Degree90);
-        //    BeginPage(Orientation.Portrait, new Size(1, 2), Rotation.Degree90);
-
-        //}
 
 
         [TestMethod]

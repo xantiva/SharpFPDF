@@ -2,7 +2,9 @@
 {
     public sealed class PageInfo
     {
-        internal Size? Size { get; set; }
-        internal double? Rotation { get; set; }
+        public Size? Size { get; set; } = null;
+        public Rotation? Rotation { get; set; } = null;
+
+        public int N { get; set; }
     }
 }

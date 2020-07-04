@@ -53,6 +53,7 @@ namespace SharpFPDF
         private const double _heightA4 = 841.89;
         private const string _pdfVerion1_3 = "1.3";
         private const string _pdfVerion1_4 = "1.4";
+        private const string _SharpFPDF_VERSION = "0.1";
         private const string _defaultDrawColor = "0 G";
         private const string _defaultFillColor = "0 g";
         private const string _defaultTextColor = "0 g";
@@ -85,7 +86,12 @@ namespace SharpFPDF
         /// <summary>
         /// page-related data
         /// </summary>
-        private readonly List<PageInfo> _pageInfos = new List<PageInfo>();
+        private readonly Dictionary<int, PageInfo> _pageInfos = new Dictionary<int, PageInfo>();
+
+        /// <summary>
+        /// array of object offsets
+        /// </summary>
+        private readonly Dictionary<int, int> _offsets = new Dictionary<int, int>();
 
         /// <summary>
         /// array of core font names
@@ -149,7 +155,7 @@ namespace SharpFPDF
         /// <summary>
         /// current page rotation
         /// </summary>
-        private double _curRotation;
+        private Rotation _curRotation;
 
         /// <summary>
         /// left margin
@@ -236,7 +242,7 @@ namespace SharpFPDF
         /// <summary>
         /// document properties
         /// </summary>
-        private readonly MetaData _metaData = new MetaData();
+        private readonly Dictionary<string, string> _metaData = new Dictionary<string, string>();
 
         /// <summary>
         /// alias for total number of pages
@@ -465,7 +471,7 @@ namespace SharpFPDF
         /// <seealso cref="SetCreator(string)"/>
         public void SetTitle(string title)
         {
-            _metaData.Title = title;
+            _metaData.AddOrUpdate("Title", title);
         }
 
         /// <summary>
@@ -478,7 +484,7 @@ namespace SharpFPDF
         /// <seealso cref="SetCreator(string)"/>
         public void SetAuthor(string author)
         {
-            _metaData.Author = author;
+            _metaData.AddOrUpdate("Author", author);
         }
 
         /// <summary>
@@ -491,7 +497,7 @@ namespace SharpFPDF
         /// <seealso cref="SetCreator(string)"/>
         public void SetSubject(string subject)
         {
-            _metaData.Subject = subject;
+            _metaData.AddOrUpdate("Subject", subject);
         }
 
         /// <summary>
@@ -504,7 +510,7 @@ namespace SharpFPDF
         /// <seealso cref="SetCreator(string)"/>
         public void SetKeywords(string keywords)
         {
-            _metaData.Keywords = keywords;
+            _metaData.AddOrUpdate("Keywords", keywords);
         }
 
         /// <summary>
@@ -517,7 +523,7 @@ namespace SharpFPDF
         /// <seealso cref="SetKeywords(string)"/>
         public void SetCreator(string creator)
         {
-            _metaData.Creator = creator;
+            _metaData.AddOrUpdate("Creator", creator);
         }
 
         /// <summary>
@@ -595,6 +601,8 @@ namespace SharpFPDF
 
         public void AddPage(Orientation? orientation = null, Rotation? rotation = null, Size? size = null)
         {
+            if (rotation == null) rotation = Rotation.Degree0;
+
             // Start a new page
             if (_state == State.Closed) throw new InvalidOperationException("The document is closed");
 
@@ -617,7 +625,7 @@ namespace SharpFPDF
                 EndPage();
             }
             // Start new page
-            BeginPage(orientation, size, rotation);
+            BeginPage(orientation, size, (Rotation)rotation);
             // Set line cap style to square
             Out("2 J");
             // Set line width
@@ -795,27 +803,17 @@ namespace SharpFPDF
         /// <param name="style">Style of rendering. Possible values see <see cref="RectStyle"/>.</param>
         public void Rect(double x, double y, double w, double h, RectStyle style = RectStyle.Draw)
         {
-            // Draw a rectangle
-            string op;
-            switch (style)
+            string op = style switch
             {
-                case RectStyle.Draw:
-                    op = "S";
-                    break;
-                case RectStyle.Fill:
-                    op = "f";
-                    break;
-                case RectStyle.DrawAndFill:
-                    op = "B";
-                    break;
-                default:
-                    throw new NotImplementedException($"No implementation for rect style: {style}");
-            }
+                RectStyle.Draw => "S",
+                RectStyle.Fill => "f",
+                RectStyle.DrawAndFill => "B",
+                _ => throw new NotImplementedException($"No implementation for rect style: {style}"),
+            };
             Out(string.Format(
                 CultureInfo.InvariantCulture,
                 "{0:0.00} {1:0.00} {2:0.00} {3:0.00} re {4}", x * _k, (_h - y) * _k, x * _k, -h * _k, op));
         }
-
 
         /// <summary>
         /// Whenever a page break condition is met, the method is called, and the break is issued or not
@@ -909,17 +907,6 @@ namespace SharpFPDF
             SetY(y, false);
         }
 
-
-
-        /*
-
-
-
-
-         */
-
-
-
         /// <summary>
         /// This method is used to render the page footer. It is automatically called by AddPage()
         /// and Close() and should not be called directly by the application. The implementation 
@@ -970,19 +957,298 @@ namespace SharpFPDF
             return _buffer.Length;
         }
 
-        protected void BeginPage(Orientation? orientation, Size? size, Rotation? rotation)
+        protected void BeginPage(Orientation? orientation, Size? size, Rotation rotation)
         {
-            throw new NotImplementedException();
-        }
+            _page++;
+            _pages.Add(_page, new StringBuilder());
+            _state = State.BeginPage;
+            _x = _lMargin;
+            _y = _tMargin;
+            _fontFamily = string.Empty;
 
+            // Check page size and orientation
+            if (orientation == null) orientation = _defOrientation;
+            if (size == null) size = _defPageSize;
+            if (orientation != _curOrientation || size != _curPageSize)
+            {
+                // New size or orientation
+                if (orientation == Orientation.Portrait)
+                {
+                    _w = size.Width;
+                    _h = size.Height;
+                }
+                else
+                {
+                    _w = size.Height;
+                    _h = size.Width;
+                }
+                _wPt = _w * _k;
+                _hPt = _h * _k;
+                _pageBreakTrigger = _h - _bMargin;
+                _curOrientation = (Orientation)orientation;
+                _curPageSize = size;
+            }
+            if (orientation != _defOrientation || size != _defPageSize)
+            {
+                _pageInfos.Add(_page, new PageInfo() { Size = new Size(_wPt, _hPt) });
+            }
+            if (rotation != Rotation.Degree0)
+            {
+                _curRotation = rotation;
+                _pageInfos[_page].Rotation = rotation;
+            }
+        }
 
         private void EndPage()
         {
-            throw new NotImplementedException();
+            _state = State.EndPage;
         }
+
         private void EndDoc()
         {
-            throw new NotImplementedException();
+            PutHeader();
+            PutPages();
+            // TODO: implement Resources
+            //PutResources();
+            // Info
+            NewObj();
+            Put("<<");
+            PutInfo();
+            Put(">>");
+            Put("endobj");
+            // Catalog
+            NewObj();
+            Put("<<");
+            PutCatalog();
+            Put(">>");
+            Put("endobj");
+            // Cross-ref
+            var offset = GetOffset();
+            Put("xref");
+            Put($"0 {_n + 1}");
+            Put("0000000000 65535 f ");
+            for (var i = 1; i <= _n; i++)
+            {
+                Put(string.Format(CultureInfo.InvariantCulture, "{0:0000000000} 00000 n ", _offsets[i]));
+            }
+            // Trailer
+            Put("trailer");
+            Put("<<");
+            PutTrailer();
+            Put(">>");
+            Put("startxref");
+            Put(offset.ToString());
+            Put("%%EOF");
+            _state = State.Closed;
+        }
+
+        private void PutInfo()
+        {
+            _metaData.AddOrUpdate("Producer", $"SharpFPDF {_SharpFPDF_VERSION}");
+            _metaData.AddOrUpdate("CreationDate", $"D:{DateTime.Now:yyyyMMddHHmmss}");
+            foreach (var metadata in _metaData)
+            {
+                Put($"/{metadata.Key} {TextString(metadata.Value)}");
+            }
+        }
+
+        private void PutCatalog()
+        {
+            var n = _pageInfos[1].N;
+            Put("/Type /Catalog");
+            Put("/Pages 1 0 R");
+            if (_zoomMode == ZoomMode.Fullpage)
+                Put($"/OpenAction [{n} 0 R /Fit]");
+            else if (_zoomMode == ZoomMode.Fullwidth)
+                Put($"/OpenAction [{n} 0 R /FitH null]");
+            else if (_zoomMode == ZoomMode.Real)
+                Put($"/OpenAction [{n} 0 R /XYZ null null 1]");
+            else if (_zoomMode == null && _zoomFactor != null)
+                Put($"/OpenAction [{n} 0 R /XYZ null null {(_zoomFactor / 100):0.00}]");
+            switch (_layoutMode)
+            {
+                case LayoutMode.Default:
+                    break;
+                case LayoutMode.Single:
+                    Put("/PageLayout /SinglePage");
+                    break;
+                case LayoutMode.Continuous:
+                    Put("/PageLayout /OneColumn");
+                    break;
+                case LayoutMode.Two:
+                    Put("/PageLayout /TwoColumnLeft");
+                    break;
+                default:
+                    throw new NotImplementedException($"No implementation for layoutMode: {_layoutMode}");
+            }
+        }
+
+        private void PutTrailer()
+        {
+            Put($"/Size {_n + 1}");
+            Put($"/Root {_n} 0 R");
+            Put($"/Info {_n - 1} 0 R");
+        }
+
+        private static string TextString(string value)
+        {
+            // Format a text string
+            // We still have UTF16 strings
+            return $"({Escape(value)})";
+        }
+
+        private static string Escape(string s)
+        {
+            // Escape special characters
+            if (s.Contains("(") || s.Contains(")") || s.Contains("\\") || s.Contains("\r"))
+            {
+                return s.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)").Replace("\r", "\\r");
+            }
+            else
+            {
+                return s;
+            }
+        }
+
+        private void PutHeader()
+        {
+            Put($"%PDF-{_pdfVersion}");
+        }
+
+        private void PutPages()
+        {
+            var nb = _page;
+            for (int n = 1; n <= nb; n++)
+            {
+                _pageInfos[n].N = _n + 1 + 2 * (n - 1);
+            }
+            for (int n = 1; n <= nb; n++)
+            {
+                PutPage(n);
+            }
+            // Pages root
+            NewObj(1);
+            Put("<</Type /Pages");
+            var kids = new StringBuilder();
+            kids.Append("/Kids [");
+            for (int n = 1; n <= nb; n++)
+            {
+                kids.Append($"{_pageInfos[n].N} 0 R ");
+            }
+            kids.Append("]");
+            Put(kids.ToString());
+            Put($"/Count {nb}");
+            if (_defOrientation == Orientation.Portrait)
+            {
+                _w = _defPageSize.Width;
+                _h = _defPageSize.Height;
+            }
+            else
+            {
+                _w = _defPageSize.Height;
+                _h = _defPageSize.Width;
+            }
+            Put(string.Format(CultureInfo.InvariantCulture, "/MediaBox [0 0 {0:0.00} {1:0.00}]", _w * _k, _h * _k));
+            Put(">>");
+            Put("endobj");
+        }
+
+        private void PutPage(int n)
+        {
+            NewObj();
+            Put("<</Type /Page");
+            Put("/Parent 1 0 R");
+
+            if (_pageInfos[n].Size != null)
+            {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                Put(string.Format(CultureInfo.InvariantCulture, "/MediaBox [0 0 {0:0.00} {1:0.00}]", _pageInfos[n].Size.Width, _pageInfos[n].Size.Height));
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+            if (_pageInfos[n].Rotation != null)
+            {
+                Put($"/Rotate {_pageInfos[n].Rotation}");
+            }
+            Put("/Resources 2 0 R");
+
+            // TODO implement Links
+            /*
+             * 
+                if(isset($this->PageLinks[$n]))
+                {
+                    // Links
+                    $annots = '/Annots [';
+                    foreach($this->PageLinks[$n] as $pl)
+                    {
+                        $rect = sprintf('%.2F %.2F %.2F %.2F',$pl[0],$pl[1],$pl[0]+$pl[2],$pl[1]-$pl[3]);
+                        $annots .= '<</Type /Annot /Subtype /Link /Rect ['.$rect.'] /Border [0 0 0] ';
+                        if(is_string($pl[4]))
+                            $annots .= '/A <</S /URI /URI '.$this->_textstring($pl[4]).'>>>>';
+                        else
+                        {
+                            $l = $this->links[$pl[4]];
+                            if(isset($this->PageInfo[$l[0]]['size']))
+                                $h = $this->PageInfo[$l[0]]['size'][1];
+                            else
+                                $h = ($this->DefOrientation=='P') ? $this->DefPageSize[1]*$this->k : $this->DefPageSize[0]*$this->k;
+                            $annots .= sprintf('/Dest [%d 0 R /XYZ 0 %.2F null]>>',$this->PageInfo[$l[0]]['n'],$h-$l[1]*$this->k);
+                        }
+                    }
+                    $this->_put($annots.']');
+                }
+             */
+
+            if (_withAlpha)
+            {
+                Put("/Group <</Type /Group /S /Transparency /CS /DeviceRGB>>");
+            }
+            Put($"/Contents {_n + 1} 0 R>>");
+            Put("endobj");
+            // Page content
+            if (!string.IsNullOrEmpty(_aliasNbPages))
+            {
+                _pages[n] = _pages[n].Replace(_aliasNbPages, _page.ToString());
+            }
+            PutStreamObject(_pages[n]);
+        }
+
+        private void PutStreamObject(StringBuilder sb)
+        {
+
+            if (_compress)
+            {
+                // TODO implement compression
+
+                throw new NotImplementedException("Compression is not implemented yet.");
+                //$entries = '/Filter /FlateDecode ';
+                //$data = gzcompress($data);
+            }
+            else
+            {
+                NewObj();
+                Put($"<</Length {sb.Length}>>");
+                PutStream(sb);
+                Put("endobj");
+            }
+        }
+
+        private void PutStream(StringBuilder sb)
+        {
+            Put("stream");
+            Put(sb.ToString());
+            Put("endstream");
+        }
+
+        private void NewObj(int? n = null)
+        {
+            // Begin a new object
+            if (n == null)
+            {
+                n = ++_n;
+            }
+
+            _offsets.Add((int)n, GetOffset());
+            Put($"{n} 0 obj");
         }
 
 
@@ -1021,19 +1287,14 @@ namespace SharpFPDF
 
         private static double InitScaleFactor(Unit unit)
         {
-            switch (unit)
+            return unit switch
             {
-                case Unit.pt:
-                    return 1;
-                case Unit.mm:
-                    return 72 / 25.4;
-                case Unit.cm:
-                    return 72 / 2.54;
-                case Unit.inch:
-                    return 72;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(unit), unit, "Unknown unit");
-            }
+                Unit.pt => 1,
+                Unit.mm => 72 / 25.4,
+                Unit.cm => 72 / 2.54,
+                Unit.inch => 72,
+                _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, "Unknown unit"),
+            };
         }
 
         private void InitPageSize(Size size)
@@ -1066,7 +1327,7 @@ namespace SharpFPDF
         private void InitRemainingParameter()
         {
             const double oneCm72Dpi = 28.35; // 72 dpi / 2.54 cm / inch
-            // Page margins (1 cm)
+                                             // Page margins (1 cm)
             var margin = oneCm72Dpi / _k;
             SetMargins(margin, margin);
             // Interior cell margin (1 mm)
