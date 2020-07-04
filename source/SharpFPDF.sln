@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpFPDF", "SharpFPDF\SharpFPDF.csproj", "{5C656CC1-AF9E-4181-932D-C51212FE30AE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E9D9A2B7-720E-4639-98A3-244E55905D0E}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFPDFTests", "SharpFPDFTests\SharpFPDFTests.csproj", "{30991C88-0EBA-42F5-B467-E0734135639D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5C656CC1-AF9E-4181-932D-C51212FE30AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C656CC1-AF9E-4181-932D-C51212FE30AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C656CC1-AF9E-4181-932D-C51212FE30AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C656CC1-AF9E-4181-932D-C51212FE30AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30991C88-0EBA-42F5-B467-E0734135639D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30991C88-0EBA-42F5-B467-E0734135639D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30991C88-0EBA-42F5-B467-E0734135639D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30991C88-0EBA-42F5-B467-E0734135639D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F7948F57-D980-4DEC-A3C3-BCED415B7F5C}
+	EndGlobalSection
+EndGlobal
