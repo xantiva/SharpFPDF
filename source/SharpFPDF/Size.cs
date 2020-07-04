@@ -2,12 +2,12 @@
 
 namespace SharpFPDF
 {
-    public class Dimension : IPageSize
+    public sealed class Size
     {
         public double Width { get; private set; }
         public double Height { get; private set; }
 
-        public Dimension(double width, double heigth)
+        public Size(double width, double heigth)
         {
             if (width <= 0.0 || heigth <= 0.0)
             {

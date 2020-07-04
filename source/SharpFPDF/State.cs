@@ -3,7 +3,7 @@
     /// <summary>
     /// Possible document states
     /// </summary>
-    internal enum State
+    public enum State
     {
         Init = 0,
         EndPage = 1,

@@ -1,6 +1,6 @@
 ﻿namespace SharpFPDF
 {
-    internal class MetaData
+    public sealed class MetaData
     {
         /// <summary>
         /// Title of document

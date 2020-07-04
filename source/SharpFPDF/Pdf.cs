@@ -15,9 +15,9 @@ namespace SharpFPDF
             var unit = Unit.mm;
             InitFonts();
             _k = InitScaleFactor(unit);
-            var dimension = GetPageSize(PageSize.A4, _k);
-            InitPageSize(dimension);
-            InitPageOrientation(orientation, dimension);
+            var size = GetPageSize(PageSize.A4, _k);
+            InitPageSize(size);
+            InitPageOrientation(orientation, size);
             InitRemainingParameter();
         }
 
@@ -27,9 +27,9 @@ namespace SharpFPDF
         {
             InitFonts();
             _k = InitScaleFactor(unit);
-            var dimension = GetPageSize(pageSize, _k);
-            InitPageSize(dimension);
-            InitPageOrientation(orientation, dimension);
+            var size = GetPageSize(pageSize, _k);
+            InitPageSize(size);
+            InitPageOrientation(orientation, size);
             InitRemainingParameter();
         }
 
@@ -39,12 +39,11 @@ namespace SharpFPDF
         {
             InitFonts();
             _k = InitScaleFactor(unit);
-            var dimension = new Dimension(width, height);
-            InitPageSize(dimension);
-            InitPageOrientation(orientation, dimension);
+            var size = new Size(width, height);
+            InitPageSize(size);
+            InitPageOrientation(orientation, size);
             InitRemainingParameter();
         }
-
 
         #endregion
 
@@ -98,25 +97,25 @@ namespace SharpFPDF
 
         private double _k = 0;
 
-        private readonly Dictionary<PageSize, Dimension> _standardPageSizes =
-            new Dictionary<PageSize, Dimension>()
+        private readonly Dictionary<PageSize, Size> _standardPageSizes =
+            new Dictionary<PageSize, Size>()
             {
-                { PageSize.A3, new Dimension(841.89, 1190.55) },
-                { PageSize.A4, new Dimension(_widthA4, _heightA4) },
-                { PageSize.A5, new Dimension(420.94, 595.28) },
-                { PageSize.Letter, new Dimension(612, 792) },
-                { PageSize.Legal, new Dimension(612, 1008) }
+                { PageSize.A3, new Size(841.89, 1190.55) },
+                { PageSize.A4, new Size(_widthA4, _heightA4) },
+                { PageSize.A5, new Size(420.94, 595.28) },
+                { PageSize.Letter, new Size(612, 792) },
+                { PageSize.Legal, new Size(612, 1008) }
             };
 
         /// <summary>
         /// default page size
         /// </summary>
-        private Dimension _defPageSize = default!;
+        private Size _defPageSize = default!;
 
         /// <summary>
         /// current page size
         /// </summary>
-        private Dimension _curPageSize = default!;
+        private Size _curPageSize = default!;
 
         /// <summary>
         /// default orientation
@@ -991,13 +990,13 @@ namespace SharpFPDF
             }
         }
 
-        private void InitPageSize(Dimension dimension)
+        private void InitPageSize(Size size)
         {
-            _curPageSize = dimension;
-            _defPageSize = dimension;
+            _curPageSize = size;
+            _defPageSize = size;
         }
 
-        private void InitPageOrientation(Orientation orientation, Dimension size)
+        private void InitPageOrientation(Orientation orientation, Size size)
         {
             switch (orientation)
             {
@@ -1040,16 +1039,16 @@ namespace SharpFPDF
 
         #region Helper
 
-        private Dimension GetPageSize(PageSize size, double k)
+        private Size GetPageSize(PageSize pageSize, double k)
         {
-            if (_standardPageSizes.ContainsKey(size))
+            if (_standardPageSizes.ContainsKey(pageSize))
             {
-                var uncorrectedDimension = _standardPageSizes[size];
-                var dimension = new Dimension(uncorrectedDimension.Width / k, uncorrectedDimension.Height / k);
-                return dimension;
+                var uncorrectedsize = _standardPageSizes[pageSize];
+                var size = new Size(uncorrectedsize.Width / k, uncorrectedsize.Height / k);
+                return size;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(size), size, "The size has an unexpected value.");
+            throw new ArgumentOutOfRangeException(nameof(pageSize), pageSize, "The page size has an unexpected value.");
         }
 
         #endregion
