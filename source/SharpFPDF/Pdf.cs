@@ -15,7 +15,7 @@ namespace SharpFPDF
             var unit = Unit.mm;
             InitFonts();
             _k = InitScaleFactor(unit);
-            var size = GetPageSize(PageSize.A4, _k);
+            var size = GetSize(PageSize.A4, _k);
             InitPageSize(size);
             InitPageOrientation(orientation, size);
             InitRemainingParameter();
@@ -27,7 +27,7 @@ namespace SharpFPDF
         {
             InitFonts();
             _k = InitScaleFactor(unit);
-            var size = GetPageSize(pageSize, _k);
+            var size = GetSize(pageSize, _k);
             InitPageSize(size);
             InitPageOrientation(orientation, size);
             InitRemainingParameter();
@@ -549,7 +549,51 @@ namespace SharpFPDF
 
         }
 
-        public void AddPage(Orientation? orientation = null, PageSize? pageSize = null, Rotation? rotation = null)
+        #region AddPage
+
+        #region AddPage overloads
+
+        public void AddPage()
+        {
+            AddPage(null, null, (Size?)null);
+        }
+
+        public void AddPage(PageSize pageSize)
+        {
+            AddPage(null, null, GetSize(pageSize, _k));
+        }
+        public void AddPage(Orientation orientation)
+        {
+            AddPage(orientation, null, (Size?)null);
+        }
+
+        public void AddPage(Orientation orientation, Rotation rotation)
+        {
+            AddPage(orientation, rotation, (Size?)null);
+        }
+
+        public void AddPage(Orientation orientation, PageSize pageSize)
+        {
+            AddPage(orientation, null, GetSize(pageSize, _k));
+        }
+
+        public void AddPage(Rotation rotation, PageSize pageSize)
+        {
+            AddPage(null, rotation, GetSize(pageSize, _k));
+        }
+        public void AddPage(Rotation rotation, Size size)
+        {
+            AddPage(null, rotation, size);
+        }
+
+        public void AddPage(Orientation orientation, Rotation rotation, PageSize pageSize)
+        {
+            AddPage(orientation, rotation, GetSize(pageSize, _k));
+        }
+
+        #endregion
+
+        public void AddPage(Orientation? orientation = null, Rotation? rotation = null, Size? size = null)
         {
             // Start a new page
             if (_state == State.Closed) throw new InvalidOperationException("The document is closed");
@@ -573,7 +617,7 @@ namespace SharpFPDF
                 EndPage();
             }
             // Start new page
-            BeginPage(orientation, pageSize, rotation);
+            BeginPage(orientation, size, rotation);
             // Set line cap style to square
             Out("2 J");
             // Set line width
@@ -626,6 +670,8 @@ namespace SharpFPDF
             _textColor = tc;
             _colorFlag = cf;
         }
+
+        #endregion
 
         /// <summary>
         /// Returns the current page number. 
@@ -924,7 +970,7 @@ namespace SharpFPDF
             return _buffer.Length;
         }
 
-        protected void BeginPage(Orientation? orientation, PageSize? pageSize, Rotation? rotation)
+        protected void BeginPage(Orientation? orientation, Size? size, Rotation? rotation)
         {
             throw new NotImplementedException();
         }
@@ -1039,7 +1085,7 @@ namespace SharpFPDF
 
         #region Helper
 
-        private Size GetPageSize(PageSize pageSize, double k)
+        protected Size GetSize(PageSize pageSize, double k)
         {
             if (_standardPageSizes.ContainsKey(pageSize))
             {
