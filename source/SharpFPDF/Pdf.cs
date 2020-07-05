@@ -305,6 +305,10 @@ namespace SharpFPDF
         /// </summary>
         private bool _withAlpha;
 
+        /// <summary>
+        /// word spacing
+        /// </summary>
+        private double _ws;
 
         //################## NOT YET DEFINED
 
@@ -696,7 +700,8 @@ namespace SharpFPDF
         /// <param name="b">Blue component (between 0 and 255).</param>
         public void SetDrawColor(byte r, byte? g = null, byte? b = null)
         {
-            _drawColor = ConverColor(r, g, b);
+            const bool isDrawColor = true;
+            _drawColor = ConvertColor(isDrawColor, r, g, b);
             if (_page > 0)
             {
                 Out(_drawColor);
@@ -713,7 +718,9 @@ namespace SharpFPDF
         /// <param name="b">Blue component (between 0 and 255).</param>
         public void SetFillColor(byte r, byte? g = null, byte? b = null)
         {
-            _fillColor = ConverColor(r, g, b);
+            const bool isDrawColor = false;
+            _fillColor = ConvertColor(isDrawColor, r, g, b);
+            _colorFlag = _fillColor !=_textColor;
             if (_page > 0)
             {
                 Out(_fillColor);
@@ -730,11 +737,9 @@ namespace SharpFPDF
         /// <param name="b">Blue component (between 0 and 255).</param>
         public void SetTextColor(byte r, byte? g = null, byte? b = null)
         {
-            _textColor = ConverColor(r, g, b);
-            if (_page > 0)
-            {
-                Out(_textColor);
-            }
+            const bool isDrawColor = false;
+            _textColor = ConvertColor(isDrawColor, r, g, b);
+            _colorFlag = _fillColor != _textColor;
         }
 
         /// <summary>
@@ -902,6 +907,130 @@ namespace SharpFPDF
         {
             // To be implemented in your own inherited class
         }
+
+        public virtual void Cell(
+            double w, double h = 0, string txt = "", Borders border = Borders.NoBorder,
+            LineBehavior ln = LineBehavior.ToTheRight, Align align = Align.Left, bool fill = false, string link = "")
+        {
+            AssertValidBorderCombination(border);
+
+            // Output a cell
+            var k = _k;
+            if (_y + h > _pageBreakTrigger && !_inHeader && !_inFooter && AcceptPageBreak())
+            {
+                // Automatic page break
+                var x = _x;
+                var ws = _ws;
+                if (ws > 0)
+                {
+                    _ws = 0;
+                    Out("0 Tw");
+                }
+                AddPage(_curOrientation, _curRotation, _curPageSize);
+                _x = x;
+                if (ws > 0)
+                {
+                    _ws = ws;
+                    Out(string.Format(CultureInfo.InvariantCulture, "{0:0.000} Tw", ws * k));
+                }
+            }
+
+            if (w == 0)
+            {
+                w = _w - _rMargin - _x;
+            }
+            var sb = new StringBuilder();
+            if (fill || border == Borders.Frame)
+            {
+                string op;
+                if (fill)
+                {
+                    op = (border == Borders.Frame) ? "B" : "f";
+                }
+                else
+                {
+                    op = "S";
+                }
+                sb.Append(string.Format(
+                            CultureInfo.InvariantCulture,
+                            "{0:0.00} {1:0.00} {2:0.00} {3:0.00} re {4} ",
+                            _x * k, (_h - _y) * k, w * k, -h * k, op));
+            }
+            var hasSideBorders = border.HasFlag(Borders.Left) | border.HasFlag(Borders.Right) | border.HasFlag(Borders.Top) | border.HasFlag(Borders.Bottom);
+            if (hasSideBorders)
+            {
+                var x = _x;
+                var y = _y;
+                var format = "{0:0.00} {1:0.00} m {2:0.00} {3:0.00} l S ";
+                if (border.HasFlag(Borders.Left))
+                {
+                    sb.Append(string.Format(CultureInfo.InvariantCulture, format, x * k, (_h - y) * k, x * k, (_h - (y + h)) * k));
+                }
+                if (border.HasFlag(Borders.Top))
+                {
+                    sb.Append(string.Format(CultureInfo.InvariantCulture, format, x * k, (_h - y) * k, (x + w) * k, (_h - y) * k));
+                }
+                if (border.HasFlag(Borders.Right))
+                {
+                    sb.Append(string.Format(CultureInfo.InvariantCulture, format, (x + w) * k, (_h - y) * k, (x + w) * k, (_h - (y + h)) * k));
+                }
+                if (border.HasFlag(Borders.Bottom))
+                {
+                    sb.Append(string.Format(CultureInfo.InvariantCulture, format, x * k, (_h - (y + h)) * k, (x + w) * k, (_h - (y + h)) * k));
+                }
+            }
+
+            //
+            //
+            //
+            //
+
+            if (sb.Length > 0)
+            { 
+                Out(sb.ToString());
+            }
+            _lasth = h;
+            if (ln != LineBehavior.ToTheRight)
+            {
+                // Go to next line
+                _y += h;
+                if (ln == LineBehavior.ToTheBeginningOfTheNextLine)
+                {
+                    _x = _lMargin;
+                }
+            }
+            else
+            { 
+                _x += w; 
+            }
+        }
+
+        /*
+
+            if($txt!=='')
+            {
+                if(!isset($this->CurrentFont))
+                    $this->Error('No font has been set');
+                if($align=='R')
+                    $dx = $w-$this->cMargin-$this->GetStringWidth($txt);
+                elseif($align=='C')
+                    $dx = ($w-$this->GetStringWidth($txt))/2;
+                else
+                    $dx = $this->cMargin;
+                if($this->ColorFlag)
+                    $s .= 'q '.$this->TextColor.' ';
+                $s .= sprintf('BT %.2F %.2F Td (%s) Tj ET',($this->x+$dx)*$k,($this->h-($this->y+.5*$h+.3*$this->FontSize))*$k,$this->_escape($txt));
+                if($this->underline)
+                    $s .= ' '.$this->_dounderline($this->x+$dx,$this->y+.5*$h+.3*$this->FontSize,$txt);
+                if($this->ColorFlag)
+                    $s .= ' Q';
+                if($link)
+                    $this->Link($this->x+$dx,$this->y+.5*$h-.5*$this->FontSize,$this->GetStringWidth($txt),$this->FontSize,$link);
+            }
+
+        }
+         */
+
 
         public void OutputToFile(string filename)
         {
@@ -1365,7 +1494,7 @@ namespace SharpFPDF
         /// <param name="g">green</param>
         /// <param name="b">blue</param>
         /// <returns>The color string.</returns>
-        private static string ConverColor(byte r, byte? g, byte? b)
+        private static string ConvertColor(bool isDrawColor, byte r, byte? g, byte? b)
         {
             const double max = 255.0;
             string color;
@@ -1379,9 +1508,23 @@ namespace SharpFPDF
                 color = string.Format(CultureInfo.InvariantCulture, "{0:0.000} {1:0.000} {2:0.000} RG", r / max, g / max, b / max);
             }
 
-            return color;
+            return isDrawColor ? color : color.ToLowerInvariant();
         }
 
+
+        private static void AssertValidBorderCombination(Borders border)
+        {
+            Borders couldBeCombined = Borders.Left | Borders.Right | Borders.Top | Borders.Bottom;
+            Borders couldNotBeCombined = Borders.NoBorder | Borders.Frame;
+            if (border.HasFlag(couldNotBeCombined) || border.HasFlag(couldBeCombined))
+            {
+                throw new ArgumentException("Invalid border combination. Only left, right, top and bottom can be combined.", nameof(border));
+            }
+            if (border.HasFlag(Borders.NoBorder) && border.HasFlag(Borders.Frame))
+            {
+                throw new ArgumentException("Invalid border combination. You can not combine  'no border' and 'frame'.", nameof(border));
+            }
+        }
         #endregion
     }
 }

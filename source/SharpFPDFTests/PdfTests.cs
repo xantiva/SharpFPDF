@@ -25,6 +25,10 @@ namespace SharpFPDFTests
             sut.SetCompression(false);
             sut.AddPage();
             sut.Line(1, 1, 20, 20);
+            sut.SetAuthor("Xantiva");
+            sut.SetFillColor(10, 40, 100);
+            Borders borders = Borders.Left | Borders.Top;
+            sut.Cell(20, 20, "", borders, fill: true);
             sut.OutputToFile(@"Z:\test1.pdf");
 
         }
