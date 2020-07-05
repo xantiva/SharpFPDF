@@ -10,12 +10,14 @@ Methods from FPDF 1.82 Reference Manual
 
 ## ported
 - AcceptPageBreak - accept or not automatic page break
+- AddPage - add a new page
 - AliasNbPages - define an alias for number of pages
 - Close - terminate the document
 - Error - fatal error (=> not implemented, we throw exceptions)
 - Footer - page footer
 - GetPageHeight - get current page height
 - GetPageWidth - get current page width
+- GetStringWidth - compute string length
 - GetX - get current x position
 - GetY - get current y position
 - Header - page header
@@ -30,6 +32,7 @@ Methods from FPDF 1.82 Reference Manual
 - SetDrawColor - set drawing color
 - SetDisplayMode - set display mode
 - SetFillColor - set filling color
+- SetFont - set font
 - SetKeywords - associate keywords with document
 - SetLeftMargin - set left margin
 - SetLineWidth - set line width
@@ -46,18 +49,15 @@ Methods from FPDF 1.82 Reference Manual
 
 ## in progress
 - __construct - constructor  (font settings)
-- AddPage - add a new page  (Need good solution for mixed type size)
+- Cell - print a cell  (link support missing)
 
 ## todo
 - AddFont - add a new font
 - AddLink - create an internal link
-- Cell - print a cell
-- GetStringWidth - compute string length
 - Image - output an image
 - Link - put a link
 - MultiCell - print text with line breaks
 - Output - save or send the document
-- SetFont - set font
 - SetFontSize - set font size
 - SetLink - set internal link destination
 - Text - print a string

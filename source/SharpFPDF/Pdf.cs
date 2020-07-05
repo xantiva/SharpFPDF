@@ -1,8 +1,12 @@
-﻿using System;
+﻿using SharpFPDF.Fonts;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SharpFPDF
 {
@@ -268,7 +272,7 @@ namespace SharpFPDF
         /// <summary>
         /// current font style
         /// </summary>
-        private string _fontStyle = string.Empty;
+        private FontStyles _fontStyle = FontStyles.Regular;
 
         /// <summary>
         /// current font size in points
@@ -310,12 +314,22 @@ namespace SharpFPDF
         /// </summary>
         private double _ws;
 
+        /// <summary>
+        /// current font info
+        /// </summary>
+        private PdfFont? _currentFont;
+
+        /// <summary>
+        /// current font size in user unit
+        /// </summary>
+        private double _fontSize;
+
         //################## NOT YET DEFINED
 
         /// <summary>
         /// array of used fonts
         /// </summary>
-        private readonly List<int> _fonts = default!;
+        private readonly Dictionary<string, PdfFont> _fonts = new Dictionary<string, PdfFont>();
 
         //#########################################
 
@@ -610,7 +624,7 @@ namespace SharpFPDF
             if (_state == State.Closed) throw new InvalidOperationException("The document is closed");
 
             var family = _fontFamily;
-            var style = string.Format("{0}{1}", _fontStyle, _underline ? "U" : "");
+            var style = _fontStyle; // we leave the underline in the font style
             var fontSize = _fontSizePt;
             var lw = _lineWidth;
             var dc = _drawColor;
@@ -720,7 +734,7 @@ namespace SharpFPDF
         {
             const bool isDrawColor = false;
             _fillColor = ConvertColor(isDrawColor, r, g, b);
-            _colorFlag = _fillColor !=_textColor;
+            _colorFlag = _fillColor != _textColor;
             if (_page > 0)
             {
                 Out(_fillColor);
@@ -740,6 +754,27 @@ namespace SharpFPDF
             const bool isDrawColor = false;
             _textColor = ConvertColor(isDrawColor, r, g, b);
             _colorFlag = _fillColor != _textColor;
+        }
+
+        /// <summary>
+        /// Returns the length of a string in user unit. A font must be selected. 
+        /// </summary>
+        /// <param name="s">The string whose length is to be computed. </param>
+        /// <returns>The length in user units,</returns>
+        public double GetStringWidth(string s)
+        {
+            if (s == null) throw new ArgumentNullException(nameof(s), "The string must not be NULL.");
+            if (_currentFont == null) throw new InvalidOperationException("No font has been set");
+
+            var cw = _currentFont.CharacterWidths;
+            var w = 0.0;
+            var l = s.Length;
+            for (var i = 0; i < l; i++)
+            {
+                w += cw[s[i]];
+            }
+            return w * _fontSize / 1000;
+
         }
 
         /// <summary>
@@ -792,7 +827,7 @@ namespace SharpFPDF
             };
             Out(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0:0.00} {1:0.00} {2:0.00} {3:0.00} re {4}", x * _k, (_h - y) * _k, x * _k, -h * _k, op));
+                "{0:0.00} {1:0.00} {2:0.00} {3:0.00} re {4}", x * _k, (_h - y) * _k, w * _k, -h * _k, op));
         }
 
         /// <summary>
@@ -980,13 +1015,52 @@ namespace SharpFPDF
                 }
             }
 
-            //
-            //
-            //
-            //
+            if (!string.IsNullOrEmpty(txt))
+            {
+                if (_currentFont == null)
+                {
+                    throw new InvalidOperationException("No font has been set");
+                }
+                double dx;
+                if (align == Align.Right)
+                {
+                    dx = w - _cMargin - GetStringWidth(txt);
+                }
+                else if (align == Align.Center)
+                {
+                    dx = (w - GetStringWidth(txt)) / 2;
+                }
+                else
+                {
+                    dx = _cMargin;
+                }
+                if (_colorFlag)
+                {
+                    sb.Append($"q {_textColor} ");
+                }
+                sb.Append(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "BT {0:0.00} {1:0.00} Td ({2}) Tj ET",
+                        (_x + dx) * k, (_h - (_y + .5 * h + .3 * _fontSize)) * k, Escape(txt)));
+
+                if (_underline)
+                {
+                    sb.Append($" {DoUnderline(_currentFont, _x + dx, _y + .5 * h + .3 * _fontSize, txt)}");
+                }
+                if (_colorFlag)
+                {
+                    sb.Append(" Q");
+                }
+                if (!string.IsNullOrEmpty(link))
+                {
+                    // TODO implement LINK
+                    //Link(_x + dx, _y + .5 * h - .5 * _fontSize, GetStringWidth(txt), _fontSize, link);
+                }
+            }
 
             if (sb.Length > 0)
-            { 
+            {
                 Out(sb.ToString());
             }
             _lasth = h;
@@ -1000,37 +1074,113 @@ namespace SharpFPDF
                 }
             }
             else
-            { 
-                _x += w; 
-            }
-        }
-
-        /*
-
-            if($txt!=='')
             {
-                if(!isset($this->CurrentFont))
-                    $this->Error('No font has been set');
-                if($align=='R')
-                    $dx = $w-$this->cMargin-$this->GetStringWidth($txt);
-                elseif($align=='C')
-                    $dx = ($w-$this->GetStringWidth($txt))/2;
+                _x += w;
+            }
+        }
+
+        public void SetFont(string family, FontStyles style = FontStyles.Regular, double fontSize = 0)
+        {
+            // Select a font; size given in points
+            if (string.IsNullOrWhiteSpace(family))
+            {
+                family = _fontFamily;
+            }
+            else
+            {
+                family = family.ToLower();
+            }
+
+            _underline = style.HasFlag(FontStyles.Underline);
+
+            if (fontSize == 0)
+            {
+                fontSize = _fontSizePt;
+            }
+
+            // Test if font is already selected
+            if (_fontFamily == family && _fontStyle == style && _fontSizePt == fontSize)
+                return;
+
+            // Test if font is already loaded
+            var fontKey = GetFontKey(family, style);
+            if (!_fonts.ContainsKey(fontKey))
+            {
+                // Test if one of the core fonts
+                if (family == "arial")
+                    family = "helvetica";
+                if (_coreFonts.Contains(family))
+                {
+                    if (family == "symbol" || family == "zapfdingbats")
+                    {
+                        style = FontStyles.Regular;
+                    }
+                    fontKey = GetFontKey(family, style);
+                    if (!_fonts.ContainsKey(fontKey))
+                        AddFont(family, style);
+                }
                 else
-                    $dx = $this->cMargin;
-                if($this->ColorFlag)
-                    $s .= 'q '.$this->TextColor.' ';
-                $s .= sprintf('BT %.2F %.2F Td (%s) Tj ET',($this->x+$dx)*$k,($this->h-($this->y+.5*$h+.3*$this->FontSize))*$k,$this->_escape($txt));
-                if($this->underline)
-                    $s .= ' '.$this->_dounderline($this->x+$dx,$this->y+.5*$h+.3*$this->FontSize,$txt);
-                if($this->ColorFlag)
-                    $s .= ' Q';
-                if($link)
-                    $this->Link($this->x+$dx,$this->y+.5*$h-.5*$this->FontSize,$this->GetStringWidth($txt),$this->FontSize,$link);
+                {
+                    throw new InvalidOperationException($"Undefined font key: {fontKey}");
+                }
+            }
+
+            // Select it
+            _fontFamily = family;
+            _fontStyle = style;
+            _fontSizePt = fontSize;
+            _fontSize = fontSize / _k;
+            _currentFont = _fonts[fontKey];
+            if (_page > 0)
+            {
+                Out(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "BT /F{0} {1:0.00} Tf ET",
+                        _currentFont.I, _fontSizePt));
             }
 
         }
-         */
 
+        public void AddFont(string family, FontStyles style = FontStyles.Regular)
+        {
+            // TODO 1. attempt: The original font files (php) are ported into C# classes which implement PdfFont
+
+            family = family.ToLower().Replace(" ", "");
+            var fontKey = GetFontKey(family, style);
+            if (_fonts.ContainsKey(fontKey))
+            {
+                return;
+            }
+
+            var fontName = GetAvailableFonts().Where(f => f.ToLower() == fontKey.ToLower()).FirstOrDefault();
+            if (fontName == null)  throw new ArgumentException($"The given family and style leads to font, which doesn't exist: {fontKey}");
+            var type = Type.GetType($"SharpFPDF.Fonts.{fontName}");
+            var font = (PdfFont)Activator.CreateInstance(type);
+            font.I = _fonts.Count + 1;
+
+            // TODO implement Embedded Font
+            //if (!empty($info['file']))
+            //{
+            //    // Embedded font
+            //    if ($info['type'] == 'TrueType')
+            //        $this->FontFiles[$info['file']] = array('length1'=>$info['originalsize']);
+            //    else
+            //        $this->FontFiles[$info['file']] = array('length1'=>$info['size1'], 'length2'=>$info['size2']);
+            //}
+
+            _fonts.Add(fontKey, font);
+        }
+
+        public static ICollection<string> GetAvailableFonts()
+        {
+            var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.UnderlyingSystemType.BaseType == typeof(PdfFont));
+            var typeNames = new List<string>();
+            foreach (var type in types)
+            {
+                typeNames.Add(type.Name);
+            }
+            return typeNames;
+        }
 
         public void OutputToFile(string filename)
         {
@@ -1047,6 +1197,12 @@ namespace SharpFPDF
         // TODO implement
         private void InitFonts()
         {
+            /*
+             * In order to handle cp1252 codepages, we need the System.Text.Encoding.CodePages NuGet package
+             * and the code line below.
+             * https://stackoverflow.com/questions/50858209/system-notsupportedexception-no-data-is-available-for-encoding-1252/58074654#58074654             * 
+             */
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 
             /*
@@ -1466,11 +1622,6 @@ namespace SharpFPDF
         }
 
 
-        private void SetFont(string family, string style, double fontSize)
-        {
-            throw new NotImplementedException();
-        }
-
         #endregion
 
         #region Helper
@@ -1516,7 +1667,7 @@ namespace SharpFPDF
         {
             Borders couldBeCombined = Borders.Left | Borders.Right | Borders.Top | Borders.Bottom;
             Borders couldNotBeCombined = Borders.NoBorder | Borders.Frame;
-            if (border.HasFlag(couldNotBeCombined) || border.HasFlag(couldBeCombined))
+            if (border.HasFlag(couldNotBeCombined) && border.HasFlag(couldBeCombined))
             {
                 throw new ArgumentException("Invalid border combination. Only left, right, top and bottom can be combined.", nameof(border));
             }
@@ -1525,6 +1676,30 @@ namespace SharpFPDF
                 throw new ArgumentException("Invalid border combination. You can not combine  'no border' and 'frame'.", nameof(border));
             }
         }
+
+        private string DoUnderline(PdfFont currentFont, double x, double y, string txt)
+        {
+            // Underline text
+            var up = currentFont.UnderlinePosition;
+            var ut = currentFont.UnderlineThickness;
+            var spaceCount = Regex.Matches(string.Empty, Regex.Escape(txt)).Count;
+            var w = GetStringWidth(txt) + _ws * spaceCount;
+
+            return string.Format(
+                        CultureInfo.InvariantCulture,
+                        "{0:0.00} {1:0.00} {2:0.00} {3:0.00} re f",
+                        x * _k, (_h - (y - up / 1000 * _fontSize)) * _k, w * _k, -ut / 1000 * _fontSizePt);
+        }
+
+        private static string GetFontKey(string family, FontStyles style)
+        {
+            var sb = new StringBuilder();
+            sb.Append(family);
+            if (style.HasFlag(FontStyles.Bold)) sb.Append("B");
+            if (style.HasFlag(FontStyles.Italic)) sb.Append("I");
+            return sb.ToString();
+        }
+
         #endregion
     }
 }

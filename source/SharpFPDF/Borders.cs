@@ -10,11 +10,11 @@ namespace SharpFPDF
     [Flags]
     public enum Borders
     {
-        NoBorder = 0,
-        Frame = 1,
-        Left = 2,
-        Top = 4,
-        Right = 8,
-        Bottom = 16
+        NoBorder = 1,
+        Frame = 2,
+        Left = 4,
+        Top = 8,
+        Right = 16,
+        Bottom = 32
     }
 }

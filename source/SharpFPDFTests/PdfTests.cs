@@ -3,6 +3,7 @@ using SharpFPDF;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 
 namespace SharpFPDFTests
 {
@@ -26,9 +27,13 @@ namespace SharpFPDFTests
             sut.AddPage();
             sut.Line(1, 1, 20, 20);
             sut.SetAuthor("Xantiva");
-            sut.SetFillColor(10, 40, 100);
+            sut.SetFillColor(200, 40, 100);
             Borders borders = Borders.Left | Borders.Top;
             sut.Cell(20, 20, "", borders, fill: true);
+            sut.SetFont("Arial", FontStyles.Regular, 14);
+            var message = "Hello World!";
+            var width = sut.GetStringWidth(message);
+            sut.Cell(width, 20, message, Borders.Frame);
             sut.OutputToFile(@"Z:\test1.pdf");
 
         }
@@ -75,6 +80,23 @@ namespace SharpFPDFTests
 
             _sut.AddPage(Orientation.Landscape, Rotation.Degree180, PageSize.A4);
             _sut.AddPage(Orientation.Landscape, Rotation.Degree180, new Size(56,43));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void GetStringWidth_NullStringFails()
+        {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+            _sut.GetStringWidth((string) null);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        }
+
+        [TestMethod]
+        public void MyTestMethod()
+        {
+            var types = Pdf.GetAvailableFonts();
         }
     }
 }
