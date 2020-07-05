@@ -319,7 +319,7 @@ namespace SharpFPDF
 
 
 
-        #region FPDF Methods
+        #region FPDF public Methods
 
         /// <summary>
         /// Returns the current page width.
@@ -531,7 +531,6 @@ namespace SharpFPDF
         /// Defines an alias for the total number of pages. It will be substituted as the document is closed. 
         /// </summary>
         /// <param name="alias">The alias. Default value: {nb}.</param>
-        //  TODO: SeeAlso
         public void AliasNbPages(string alias = "{nb}")
         {
             _aliasNbPages = alias;
@@ -553,7 +552,6 @@ namespace SharpFPDF
             EndPage();
             // Close document
             EndDoc();
-
         }
 
         #region AddPage
@@ -740,30 +738,6 @@ namespace SharpFPDF
         }
 
         /// <summary>
-        /// Convert the RGB byte values into the needed string.
-        /// </summary>
-        /// <param name="r">red</param>
-        /// <param name="g">green</param>
-        /// <param name="b">blue</param>
-        /// <returns>The color string.</returns>
-        private static string ConverColor(byte r, byte? g, byte? b)
-        {
-            const double max = 255.0;
-            string color;
-
-            if (g == null || b == null || (r == 0 && g == 0 && b == 0))
-            {
-                color = (r / max).ToString("0.000 G", CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                color = string.Format(CultureInfo.InvariantCulture, "{0:0.000} {1:0.000} {2:0.000} RG", r / max, g / max, b / max);
-            }
-
-            return color;
-        }
-
-        /// <summary>
         /// Defines the line width. By default, the value equals 0.2 mm.
         /// The method can be called before the first page is created and 
         /// the value is retained from page to page. 
@@ -936,6 +910,96 @@ namespace SharpFPDF
             File.WriteAllText(filename, _buffer.ToString());
         }
 
+
+        #endregion
+
+        #region InitMethods
+
+        // TODO implement
+        private void InitFonts()
+        {
+
+
+            /*
+             * From Constructor ...
+             * 
+             * 	// Font path
+                if(defined('FPDF_FONTPATH'))
+                {
+                    $this->fontpath = FPDF_FONTPATH;
+                    if(substr($this->fontpath,-1)!='/' && substr($this->fontpath,-1)!='\\')
+                        $this->fontpath .= '/';
+                }
+                elseif(is_dir(dirname(__FILE__).'/font'))
+                    $this->fontpath = dirname(__FILE__).'/font/';
+                else
+                    $this->fontpath = '';
+
+             */
+        }
+
+        private static double InitScaleFactor(Unit unit)
+        {
+            return unit switch
+            {
+                Unit.pt => 1,
+                Unit.mm => 72 / 25.4,
+                Unit.cm => 72 / 2.54,
+                Unit.inch => 72,
+                _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, "Unknown unit"),
+            };
+        }
+
+        private void InitPageSize(Size size)
+        {
+            _curPageSize = size;
+            _defPageSize = size;
+        }
+
+        private void InitPageOrientation(Orientation orientation, Size size)
+        {
+            switch (orientation)
+            {
+                case Orientation.Portrait:
+                    _w = size.Width;
+                    _h = size.Height;
+                    break;
+                case Orientation.Landscape:
+                    _w = size.Height;
+                    _h = size.Width;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(orientation), orientation, "Unknown orientation");
+            }
+
+            _wPt = _w * _k;
+            _hPt = _h * _k;
+        }
+
+
+        private void InitRemainingParameter()
+        {
+            const double oneCm72Dpi = 28.35; // 72 dpi / 2.54 cm / inch
+                                             // Page margins (1 cm)
+            var margin = oneCm72Dpi / _k;
+            SetMargins(margin, margin);
+            // Interior cell margin (1 mm)
+            _cMargin = margin / 10;
+            // Line width (0.2 mm)
+            _lineWidth = .567 / _k;
+            // Automatic page break
+            SetAutoPageBreak(true, 2 * margin);
+            // Default display mode
+            SetDisplayMode(ZoomMode.Default);
+            // Enable compression
+            SetCompression(true);
+        }
+
+        #endregion
+
+        #region protected methods
+
+
         protected void Out(string s)
         {
             switch (_state)
@@ -1052,6 +1116,7 @@ namespace SharpFPDF
 
         private void PutResources()
         {
+            // TODO implement PutFonts, ...
             //PutFonts();
             //PutImages();
             // Resource dictionary
@@ -1061,21 +1126,6 @@ namespace SharpFPDF
             Put(">>");
             Put("endobj");
         }
-
-        /*
-        protected function _putresources()
-        {
-            $this->_putfonts();
-            $this->_putimages();
-            // Resource dictionary
-            $this->_newobj(2);
-            $this->_put('<<');
-            $this->_putresourcedict();
-            $this->_put('>>');
-            $this->_put('endobj');
-        }
-
-         */
 
         private void PutInfo()
         {
@@ -1292,91 +1342,6 @@ namespace SharpFPDF
             throw new NotImplementedException();
         }
 
-
-        #endregion
-
-        #region InitMethods
-
-        // TODO implement
-        private void InitFonts()
-        {
-
-
-            /*
-             * From Constructor ...
-             * 
-             * 	// Font path
-                if(defined('FPDF_FONTPATH'))
-                {
-                    $this->fontpath = FPDF_FONTPATH;
-                    if(substr($this->fontpath,-1)!='/' && substr($this->fontpath,-1)!='\\')
-                        $this->fontpath .= '/';
-                }
-                elseif(is_dir(dirname(__FILE__).'/font'))
-                    $this->fontpath = dirname(__FILE__).'/font/';
-                else
-                    $this->fontpath = '';
-
-             */
-        }
-
-        private static double InitScaleFactor(Unit unit)
-        {
-            return unit switch
-            {
-                Unit.pt => 1,
-                Unit.mm => 72 / 25.4,
-                Unit.cm => 72 / 2.54,
-                Unit.inch => 72,
-                _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, "Unknown unit"),
-            };
-        }
-
-        private void InitPageSize(Size size)
-        {
-            _curPageSize = size;
-            _defPageSize = size;
-        }
-
-        private void InitPageOrientation(Orientation orientation, Size size)
-        {
-            switch (orientation)
-            {
-                case Orientation.Portrait:
-                    _w = size.Width;
-                    _h = size.Height;
-                    break;
-                case Orientation.Landscape:
-                    _w = size.Height;
-                    _h = size.Width;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(orientation), orientation, "Unknown orientation");
-            }
-
-            _wPt = _w * _k;
-            _hPt = _h * _k;
-        }
-
-
-        private void InitRemainingParameter()
-        {
-            const double oneCm72Dpi = 28.35; // 72 dpi / 2.54 cm / inch
-                                             // Page margins (1 cm)
-            var margin = oneCm72Dpi / _k;
-            SetMargins(margin, margin);
-            // Interior cell margin (1 mm)
-            _cMargin = margin / 10;
-            // Line width (0.2 mm)
-            _lineWidth = .567 / _k;
-            // Automatic page break
-            SetAutoPageBreak(true, 2 * margin);
-            // Default display mode
-            SetDisplayMode(ZoomMode.Default);
-            // Enable compression
-            SetCompression(true);
-        }
-
         #endregion
 
         #region Helper
@@ -1391,6 +1356,30 @@ namespace SharpFPDF
             }
 
             throw new ArgumentOutOfRangeException(nameof(pageSize), pageSize, "The page size has an unexpected value.");
+        }
+
+        /// <summary>
+        /// Convert the RGB byte values into the needed string.
+        /// </summary>
+        /// <param name="r">red</param>
+        /// <param name="g">green</param>
+        /// <param name="b">blue</param>
+        /// <returns>The color string.</returns>
+        private static string ConverColor(byte r, byte? g, byte? b)
+        {
+            const double max = 255.0;
+            string color;
+
+            if (g == null || b == null || (r == 0 && g == 0 && b == 0))
+            {
+                color = (r / max).ToString("0.000 G", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                color = string.Format(CultureInfo.InvariantCulture, "{0:0.000} {1:0.000} {2:0.000} RG", r / max, g / max, b / max);
+            }
+
+            return color;
         }
 
         #endregion
