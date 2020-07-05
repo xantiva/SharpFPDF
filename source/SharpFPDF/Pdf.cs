@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace SharpFPDF
@@ -11,7 +12,7 @@ namespace SharpFPDF
 
         public Pdf()
         {
-            var orientation = Orientation.Landscape;
+            var orientation = Orientation.Portrait;
             var unit = Unit.mm;
             InitFonts();
             _k = InitScaleFactor(unit);
@@ -21,7 +22,7 @@ namespace SharpFPDF
             InitRemainingParameter();
         }
 
-        public Pdf(Orientation orientation = Orientation.Landscape,
+        public Pdf(Orientation orientation = Orientation.Portrait,
                    Unit unit = Unit.mm,
                    PageSize pageSize = PageSize.A4)
         {
@@ -33,7 +34,7 @@ namespace SharpFPDF
             InitRemainingParameter();
         }
 
-        public Pdf(Orientation orientation = Orientation.Landscape,
+        public Pdf(Orientation orientation = Orientation.Portrait,
                    Unit unit = Unit.mm,
                    double width = _widthA4, double height = _heightA4)
         {
@@ -282,7 +283,7 @@ namespace SharpFPDF
         /// <summary>
         /// commands for drawing color
         /// </summary>
-        private string _drawColor = _defaultFillColor;
+        private string _drawColor = _defaultDrawColor;
 
         /// <summary>
         /// commands for filling color
@@ -928,6 +929,13 @@ namespace SharpFPDF
             // To be implemented in your own inherited class
         }
 
+        public void OutputToFile(string filename)
+        {
+            Close();
+            if (string.IsNullOrWhiteSpace(filename)) filename = "doc.pdf";
+            File.WriteAllText(filename, _buffer.ToString());
+        }
+
         protected void Out(string s)
         {
             switch (_state)
@@ -961,6 +969,7 @@ namespace SharpFPDF
         {
             _page++;
             _pages.Add(_page, new StringBuilder());
+            _pageInfos.Add(_page, new PageInfo());
             _state = State.BeginPage;
             _x = _lMargin;
             _y = _tMargin;
@@ -1008,8 +1017,7 @@ namespace SharpFPDF
         {
             PutHeader();
             PutPages();
-            // TODO: implement Resources
-            //PutResources();
+            PutResources();
             // Info
             NewObj();
             Put("<<");
@@ -1041,6 +1049,33 @@ namespace SharpFPDF
             Put("%%EOF");
             _state = State.Closed;
         }
+
+        private void PutResources()
+        {
+            //PutFonts();
+            //PutImages();
+            // Resource dictionary
+            NewObj(2);
+            Put("<<");
+            //PutResourceDict();
+            Put(">>");
+            Put("endobj");
+        }
+
+        /*
+        protected function _putresources()
+        {
+            $this->_putfonts();
+            $this->_putimages();
+            // Resource dictionary
+            $this->_newobj(2);
+            $this->_put('<<');
+            $this->_putresourcedict();
+            $this->_put('>>');
+            $this->_put('endobj');
+        }
+
+         */
 
         private void PutInfo()
         {

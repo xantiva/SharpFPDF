@@ -22,6 +22,10 @@ namespace SharpFPDFTests
         public void CreatePdf()
         {
             var sut = new Pdf();
+            sut.SetCompression(false);
+            sut.AddPage();
+            sut.Line(1, 1, 20, 20);
+            sut.OutputToFile(@"Z:\test1.pdf");
 
         }
 
