@@ -324,6 +324,22 @@ namespace SharpFPDF
         /// </summary>
         private double _fontSize;
 
+        /// <summary>
+        /// array of ToUnicode CMaps
+        /// </summary>
+        private Dictionary<string, int> _cmaps = new Dictionary<string, int>();
+
+        /// <summary>
+        /// array of encodings [encoding, object number]
+        /// </summary>
+        private Dictionary<string, int> _encodings = new Dictionary<string, int>();
+
+        /// <summary>
+        /// array of font files
+        /// </summary>
+        private Dictionary<string, PdfFont> _fontFiles = new Dictionary<string, PdfFont>();
+
+
         //################## NOT YET DEFINED
 
         /// <summary>
@@ -1153,7 +1169,7 @@ namespace SharpFPDF
             }
 
             var fontName = GetAvailableFonts().Where(f => f.ToLower() == fontKey.ToLower()).FirstOrDefault();
-            if (fontName == null)  throw new ArgumentException($"The given family and style leads to font, which doesn't exist: {fontKey}");
+            if (fontName == null) throw new ArgumentException($"The given family and style leads to font, which doesn't exist: {fontKey}");
             var type = Type.GetType($"SharpFPDF.Fonts.{fontName}");
             var font = (PdfFont)Activator.CreateInstance(type);
             font.I = _fonts.Count + 1;
@@ -1402,14 +1418,37 @@ namespace SharpFPDF
         private void PutResources()
         {
             // TODO implement PutFonts, ...
-            //PutFonts();
+            PutFonts();
             //PutImages();
             // Resource dictionary
             NewObj(2);
             Put("<<");
-            //PutResourceDict();
+            PutResourceDict();
             Put(">>");
             Put("endobj");
+        }
+
+        private void PutResourceDict()
+        {
+            Put("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]");
+            Put("/Font <<");
+
+            foreach (var font in _fonts)
+            {
+                Put($"/F{font.Value.I} {font.Value.N} 0 R");
+            }
+            Put(">>");
+            Put("/XObject <<");
+            Putxobjectdict();
+            Put(">>");
+        }
+
+        private void Putxobjectdict()
+        {
+            // TODO: Implement images
+
+            //foreach ($this->images as $image)
+            //$this->_put('/I'.$image['i'].' '.$image['n'].' 0 R');
         }
 
         private void PutInfo()
@@ -1609,6 +1648,132 @@ namespace SharpFPDF
             Put("endstream");
         }
 
+
+        private void PutFonts()
+        {
+            // TODO   Implement FontFiles
+
+            foreach (var keyValuePair in _fonts)
+            {
+                var k = keyValuePair.Key;
+                var font = keyValuePair.Value;
+
+                // TODO The "diff" part?
+                // Encoding
+                if (!string.IsNullOrEmpty(font.Diff))
+                {
+                    if (font.Encoding != null && !_encodings.ContainsKey((string)font.Encoding))
+                    {
+                        NewObj();
+                        Put($"<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [{font.Diff}]>>");
+                        Put("endobj");
+                        _encodings.Add((string)font.Encoding, _n);
+                    }
+                }
+                // ToUnicode CMap
+                string cmapKey = string.Empty;
+                if (font.Uv != null)
+                {
+                    if (font.Encoding != null)
+                    {
+                        cmapKey = font.Encoding;
+                    }
+                    else
+                    {
+                        cmapKey = font.Name;
+                    }
+                    if (!_cmaps.ContainsKey(cmapKey))
+                    {
+                        var cmap = ToUnicodeCmap(font.Uv);
+                        PutStreamObject(cmap);
+                        _cmaps.Add(cmapKey, _n);
+                    }
+                }
+                // Font object
+                _fonts[k].N = _n + 1;
+                var type = font.Type;
+                var name = font.Name;
+                if (font.Subsetted)
+                    name = $"AAAAAA+{name}";
+                if (type == "Core")
+                {
+                    // Core font
+                    NewObj();
+                    Put("<</Type /Font");
+                    Put($"/BaseFont /{name}");
+                    Put("/Subtype /Type1");
+                    if (name != "Symbol" && name != "ZapfDingbats")
+                    {
+                        Put("/Encoding /WinAnsiEncoding");
+                    }
+                    if (font.Uv != null)
+                    {
+                        Put($"/ToUnicode {_cmaps[cmapKey]} 0 R");
+                    }
+                    Put(">>");
+                    Put("endobj");
+                }
+                else if (type == "Type1" || type == "TrueType")
+                {
+                    // Additional Type1 or TrueType/OpenType font
+                    NewObj();
+                    Put("<</Type /Font");
+                    Put($"/BaseFont /{name}");
+                    Put($"/Subtype /{type}");
+                    Put("/FirstChar 32 /LastChar 255");
+                    Put($"/Widths {_n + 1} 0 R");
+                    Put($"/FontDescriptor {_n + 2} 0 R");
+                    if (font.Diff != null && font.Encoding != null) // 
+                    {
+                        Put($"/Encoding {_encodings[font.Encoding]} 0 R");
+                    }
+                    else
+                    {
+                        Put("/Encoding /WinAnsiEncoding");
+                    }
+                    if (font.Uv != null)
+                    {
+                        Put($"/ToUnicode {_cmaps[cmapKey]} 0 R");
+                    }
+                    Put(">>");
+                    Put("endobj");
+                    // Widths
+                    NewObj();
+                    var cw = font.CharacterWidths;
+                    var sb = new StringBuilder();
+                    sb.Append("[");
+                    for (var i = 32; i <= 255; i++)
+                        sb.Append($"{cw[(char)i]} ");
+                    Put(sb.Append("]").ToString());
+                    Put("endobj");
+                    // Descriptor
+                    NewObj();
+                    sb.Clear();
+                    sb.Append($"<</Type /FontDescriptor /FontName /{name}");
+                    foreach (var kvp in font.Desc)
+                    {
+                        sb.Append($" /{kvp.Key} {kvp.Value}");
+                    }
+                    if (!string.IsNullOrEmpty(font.File))
+                    {
+                        sb.Append($" /FontFile{(type == "Type1" ? "" : "2")} {_fontFiles[font.File].N} 0 R");
+                    }
+                    Put(sb.Append(">>").ToString());
+                    Put("endobj");
+                }
+                else
+                {
+
+                    throw new NotImplementedException($"The implementation for {type} is not yet implemented.");
+                    //// Allow for additional types
+                    //$mtd = '_put'.strtolower($type);
+                    //if (!method_exists($this,$mtd))
+                    //    $this->Error('Unsupported font type: '.$type);
+                    //$this->$mtd($font);
+                }
+            }
+        }
+
         private void NewObj(int? n = null)
         {
             // Begin a new object
@@ -1701,5 +1866,60 @@ namespace SharpFPDF
         }
 
         #endregion
+
+        private static StringBuilder ToUnicodeCmap(Dictionary<int, int[]> uv)
+        {
+            var ranges = new StringBuilder();
+            var nbr = 0;
+            var chars = new StringBuilder();
+            var nbc = 0;
+
+            foreach (var keyValuePair in uv)
+            {
+                if (keyValuePair.Value.Length > 1)
+                {
+                    // 			$ranges .= sprintf("<%02X> <%02X> <%04X>\n",$c,$c+$v[1]-1,$v[0]);
+
+                    ranges.AppendNewLine(string.Format("<{0:X2}> <{1:X2}> <{2:X4}>", keyValuePair.Key, keyValuePair.Key + keyValuePair.Value[1] - 1, keyValuePair.Value[0]));
+                    nbr++;
+                }
+                else
+                {
+                    chars.AppendNewLine(string.Format("<{0:X2}> <{1:X4}>", keyValuePair.Key, keyValuePair.Value[0]));
+                    nbc++;
+                }
+            }
+            var sb = new StringBuilder();
+            sb.AppendNewLine("/CIDInit /ProcSet findresource begin");
+            sb.AppendNewLine("12 dict begin");
+            sb.AppendNewLine("begincmap");
+            sb.AppendNewLine("/CIDSystemInfo");
+            sb.AppendNewLine("<</Registry (Adobe)");
+            sb.AppendNewLine("/Ordering (UCS)");
+            sb.AppendNewLine("/Supplement 0");
+            sb.AppendNewLine(">> def");
+            sb.AppendNewLine("/CMapName /Adobe-Identity-UCS def");
+            sb.AppendNewLine("/CMapType 2 def");
+            sb.AppendNewLine("1 begincodespacerange");
+            sb.AppendNewLine("<00> <FF>");
+            sb.AppendNewLine("endcodespacerange");
+            if (nbr > 0)
+            {
+                sb.AppendNewLine($"{nbr} beginbfrange");
+                sb.Append(ranges);
+                sb.AppendNewLine("endbfrange");
+            }
+            if (nbc > 0)
+            {
+                sb.AppendNewLine($"{nbc} beginbfchar");
+                sb.Append(chars);
+                sb.AppendNewLine("endbfchar");
+            }
+            sb.AppendNewLine("endcmap");
+            sb.AppendNewLine("CMapName currentdict /CMap defineresource pop");
+            sb.AppendNewLine("end");
+            sb.AppendNewLine("end");
+            return sb;
+        }
     }
 }

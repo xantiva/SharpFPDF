@@ -1,17 +1,19 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace SharpFPDF.Fonts
 {
-    public class Helvetica : PdfFont
+    public class HelveticaB : PdfFont
     {
-        public Helvetica()
+        public HelveticaB()
         {
             Type = "Core";
-            Name = "Helvetica";
+            Name = "Helvetica-Bold";
             UnderlinePosition = -100;
             UnderlineThickness = 50;
             Encoding = "1252"; // cp1252
-            
+
             #region CharacterWidths
             CharacterWidths.Add((char)0, 278);
             CharacterWidths.Add((char)1, 278);
@@ -46,13 +48,13 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)30, 278);
             CharacterWidths.Add((char)31, 278);
             CharacterWidths.Add((char)32, 278);
-            CharacterWidths.Add((char)33, 278);
-            CharacterWidths.Add((char)34, 355);
+            CharacterWidths.Add((char)33, 333);
+            CharacterWidths.Add((char)34, 474);
             CharacterWidths.Add((char)35, 556);
             CharacterWidths.Add((char)36, 556);
             CharacterWidths.Add((char)37, 889);
-            CharacterWidths.Add((char)38, 667);
-            CharacterWidths.Add((char)39, 191);
+            CharacterWidths.Add((char)38, 722);
+            CharacterWidths.Add((char)39, 238);
             CharacterWidths.Add((char)40, 333);
             CharacterWidths.Add((char)41, 333);
             CharacterWidths.Add((char)42, 389);
@@ -71,15 +73,15 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)55, 556);
             CharacterWidths.Add((char)56, 556);
             CharacterWidths.Add((char)57, 556);
-            CharacterWidths.Add((char)58, 278);
-            CharacterWidths.Add((char)59, 278);
+            CharacterWidths.Add((char)58, 333);
+            CharacterWidths.Add((char)59, 333);
             CharacterWidths.Add((char)60, 584);
             CharacterWidths.Add((char)61, 584);
             CharacterWidths.Add((char)62, 584);
-            CharacterWidths.Add((char)63, 556);
-            CharacterWidths.Add((char)64, 1015);
-            CharacterWidths.Add((char)65, 667);
-            CharacterWidths.Add((char)66, 667);
+            CharacterWidths.Add((char)63, 611);
+            CharacterWidths.Add((char)64, 975);
+            CharacterWidths.Add((char)65, 722);
+            CharacterWidths.Add((char)66, 722);
             CharacterWidths.Add((char)67, 722);
             CharacterWidths.Add((char)68, 722);
             CharacterWidths.Add((char)69, 667);
@@ -87,9 +89,9 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)71, 778);
             CharacterWidths.Add((char)72, 722);
             CharacterWidths.Add((char)73, 278);
-            CharacterWidths.Add((char)74, 500);
-            CharacterWidths.Add((char)75, 667);
-            CharacterWidths.Add((char)76, 556);
+            CharacterWidths.Add((char)74, 556);
+            CharacterWidths.Add((char)75, 722);
+            CharacterWidths.Add((char)76, 611);
             CharacterWidths.Add((char)77, 833);
             CharacterWidths.Add((char)78, 722);
             CharacterWidths.Add((char)79, 778);
@@ -104,48 +106,48 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)88, 667);
             CharacterWidths.Add((char)89, 667);
             CharacterWidths.Add((char)90, 611);
-            CharacterWidths.Add((char)91, 278);
+            CharacterWidths.Add((char)91, 333);
             CharacterWidths.Add((char)92, 278);
-            CharacterWidths.Add((char)93, 278);
-            CharacterWidths.Add((char)94, 469);
+            CharacterWidths.Add((char)93, 333);
+            CharacterWidths.Add((char)94, 584);
             CharacterWidths.Add((char)95, 556);
             CharacterWidths.Add((char)96, 333);
             CharacterWidths.Add((char)97, 556);
-            CharacterWidths.Add((char)98, 556);
-            CharacterWidths.Add((char)99, 500);
-            CharacterWidths.Add((char)100, 556);
+            CharacterWidths.Add((char)98, 611);
+            CharacterWidths.Add((char)99, 556);
+            CharacterWidths.Add((char)100, 611);
             CharacterWidths.Add((char)101, 556);
-            CharacterWidths.Add((char)102, 278);
-            CharacterWidths.Add((char)103, 556);
-            CharacterWidths.Add((char)104, 556);
-            CharacterWidths.Add((char)105, 222);
-            CharacterWidths.Add((char)106, 222);
-            CharacterWidths.Add((char)107, 500);
-            CharacterWidths.Add((char)108, 222);
-            CharacterWidths.Add((char)109, 833);
-            CharacterWidths.Add((char)110, 556);
-            CharacterWidths.Add((char)111, 556);
-            CharacterWidths.Add((char)112, 556);
-            CharacterWidths.Add((char)113, 556);
-            CharacterWidths.Add((char)114, 333);
-            CharacterWidths.Add((char)115, 500);
-            CharacterWidths.Add((char)116, 278);
-            CharacterWidths.Add((char)117, 556);
-            CharacterWidths.Add((char)118, 500);
-            CharacterWidths.Add((char)119, 722);
-            CharacterWidths.Add((char)120, 500);
-            CharacterWidths.Add((char)121, 500);
+            CharacterWidths.Add((char)102, 333);
+            CharacterWidths.Add((char)103, 611);
+            CharacterWidths.Add((char)104, 611);
+            CharacterWidths.Add((char)105, 278);
+            CharacterWidths.Add((char)106, 278);
+            CharacterWidths.Add((char)107, 556);
+            CharacterWidths.Add((char)108, 278);
+            CharacterWidths.Add((char)109, 889);
+            CharacterWidths.Add((char)110, 611);
+            CharacterWidths.Add((char)111, 611);
+            CharacterWidths.Add((char)112, 611);
+            CharacterWidths.Add((char)113, 611);
+            CharacterWidths.Add((char)114, 389);
+            CharacterWidths.Add((char)115, 556);
+            CharacterWidths.Add((char)116, 333);
+            CharacterWidths.Add((char)117, 611);
+            CharacterWidths.Add((char)118, 556);
+            CharacterWidths.Add((char)119, 778);
+            CharacterWidths.Add((char)120, 556);
+            CharacterWidths.Add((char)121, 556);
             CharacterWidths.Add((char)122, 500);
-            CharacterWidths.Add((char)123, 334);
-            CharacterWidths.Add((char)124, 260);
-            CharacterWidths.Add((char)125, 334);
+            CharacterWidths.Add((char)123, 389);
+            CharacterWidths.Add((char)124, 280);
+            CharacterWidths.Add((char)125, 389);
             CharacterWidths.Add((char)126, 584);
             CharacterWidths.Add((char)127, 350);
             CharacterWidths.Add((char)128, 556);
             CharacterWidths.Add((char)129, 350);
-            CharacterWidths.Add((char)130, 222);
+            CharacterWidths.Add((char)130, 278);
             CharacterWidths.Add((char)131, 556);
-            CharacterWidths.Add((char)132, 333);
+            CharacterWidths.Add((char)132, 500);
             CharacterWidths.Add((char)133, 1000);
             CharacterWidths.Add((char)134, 556);
             CharacterWidths.Add((char)135, 556);
@@ -158,16 +160,16 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)142, 611);
             CharacterWidths.Add((char)143, 350);
             CharacterWidths.Add((char)144, 350);
-            CharacterWidths.Add((char)145, 222);
-            CharacterWidths.Add((char)146, 222);
-            CharacterWidths.Add((char)147, 333);
-            CharacterWidths.Add((char)148, 333);
+            CharacterWidths.Add((char)145, 278);
+            CharacterWidths.Add((char)146, 278);
+            CharacterWidths.Add((char)147, 500);
+            CharacterWidths.Add((char)148, 500);
             CharacterWidths.Add((char)149, 350);
             CharacterWidths.Add((char)150, 556);
             CharacterWidths.Add((char)151, 1000);
             CharacterWidths.Add((char)152, 333);
             CharacterWidths.Add((char)153, 1000);
-            CharacterWidths.Add((char)154, 500);
+            CharacterWidths.Add((char)154, 556);
             CharacterWidths.Add((char)155, 333);
             CharacterWidths.Add((char)156, 944);
             CharacterWidths.Add((char)157, 350);
@@ -179,7 +181,7 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)163, 556);
             CharacterWidths.Add((char)164, 556);
             CharacterWidths.Add((char)165, 556);
-            CharacterWidths.Add((char)166, 260);
+            CharacterWidths.Add((char)166, 280);
             CharacterWidths.Add((char)167, 556);
             CharacterWidths.Add((char)168, 333);
             CharacterWidths.Add((char)169, 737);
@@ -194,8 +196,8 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)178, 333);
             CharacterWidths.Add((char)179, 333);
             CharacterWidths.Add((char)180, 333);
-            CharacterWidths.Add((char)181, 556);
-            CharacterWidths.Add((char)182, 537);
+            CharacterWidths.Add((char)181, 611);
+            CharacterWidths.Add((char)182, 556);
             CharacterWidths.Add((char)183, 278);
             CharacterWidths.Add((char)184, 333);
             CharacterWidths.Add((char)185, 333);
@@ -205,12 +207,12 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)189, 834);
             CharacterWidths.Add((char)190, 834);
             CharacterWidths.Add((char)191, 611);
-            CharacterWidths.Add((char)192, 667);
-            CharacterWidths.Add((char)193, 667);
-            CharacterWidths.Add((char)194, 667);
-            CharacterWidths.Add((char)195, 667);
-            CharacterWidths.Add((char)196, 667);
-            CharacterWidths.Add((char)197, 667);
+            CharacterWidths.Add((char)192, 722);
+            CharacterWidths.Add((char)193, 722);
+            CharacterWidths.Add((char)194, 722);
+            CharacterWidths.Add((char)195, 722);
+            CharacterWidths.Add((char)196, 722);
+            CharacterWidths.Add((char)197, 722);
             CharacterWidths.Add((char)198, 1000);
             CharacterWidths.Add((char)199, 722);
             CharacterWidths.Add((char)200, 667);
@@ -244,7 +246,7 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)228, 556);
             CharacterWidths.Add((char)229, 556);
             CharacterWidths.Add((char)230, 889);
-            CharacterWidths.Add((char)231, 500);
+            CharacterWidths.Add((char)231, 556);
             CharacterWidths.Add((char)232, 556);
             CharacterWidths.Add((char)233, 556);
             CharacterWidths.Add((char)234, 556);
@@ -253,22 +255,22 @@ namespace SharpFPDF.Fonts
             CharacterWidths.Add((char)237, 278);
             CharacterWidths.Add((char)238, 278);
             CharacterWidths.Add((char)239, 278);
-            CharacterWidths.Add((char)240, 556);
-            CharacterWidths.Add((char)241, 556);
-            CharacterWidths.Add((char)242, 556);
-            CharacterWidths.Add((char)243, 556);
-            CharacterWidths.Add((char)244, 556);
-            CharacterWidths.Add((char)245, 556);
-            CharacterWidths.Add((char)246, 556);
+            CharacterWidths.Add((char)240, 611);
+            CharacterWidths.Add((char)241, 611);
+            CharacterWidths.Add((char)242, 611);
+            CharacterWidths.Add((char)243, 611);
+            CharacterWidths.Add((char)244, 611);
+            CharacterWidths.Add((char)245, 611);
+            CharacterWidths.Add((char)246, 611);
             CharacterWidths.Add((char)247, 584);
             CharacterWidths.Add((char)248, 611);
-            CharacterWidths.Add((char)249, 556);
-            CharacterWidths.Add((char)250, 556);
-            CharacterWidths.Add((char)251, 556);
-            CharacterWidths.Add((char)252, 556);
-            CharacterWidths.Add((char)253, 500);
-            CharacterWidths.Add((char)254, 556);
-            CharacterWidths.Add((char)255, 500);
+            CharacterWidths.Add((char)249, 611);
+            CharacterWidths.Add((char)250, 611);
+            CharacterWidths.Add((char)251, 611);
+            CharacterWidths.Add((char)252, 611);
+            CharacterWidths.Add((char)253, 556);
+            CharacterWidths.Add((char)254, 611);
+            CharacterWidths.Add((char)255, 556);
             #endregion
 
             #region Uw

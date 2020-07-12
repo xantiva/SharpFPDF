@@ -34,8 +34,10 @@ namespace SharpFPDFTests
             var message = "Hello World!";
             var width = sut.GetStringWidth(message);
             sut.Cell(width, 20, message, Borders.Frame);
+            sut.SetFont("Arial", FontStyles.Bold, 14);
+            width = sut.GetStringWidth(message);
+            sut.Cell(width, 20, message, Borders.Frame);
             sut.OutputToFile(@"Z:\test1.pdf");
-
         }
 
         [TestMethod]
